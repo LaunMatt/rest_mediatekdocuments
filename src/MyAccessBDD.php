@@ -63,8 +63,12 @@ class MyAccessBDD extends AccessBDD {
      */	
     protected function traitementInsert(string $table, ?array $champs) : ?int{
         switch($table){
-            case "" :
-                // return $this->uneFonction(parametres);
+            case "livre" :
+                return $this->insertLivre($champs);
+            case "dvd" :
+                return $this->insertDvd($champs);
+            case "revue" :
+                return $this->insertRevue($champs);
             default:                    
                 // cas général
                 return $this->insertOneTupleOneTable($table, $champs);	
@@ -81,8 +85,12 @@ class MyAccessBDD extends AccessBDD {
      */	
     protected function traitementUpdate(string $table, ?string $id, ?array $champs) : ?int{
         switch($table){
-            case "" :
-                // return $this->uneFonction(parametres);
+            case "livre" :
+                return $this->updateLivre($id, $champs);
+            case "dvd" :
+                return $this->updateDvd($id, $champs);
+            case "revue" :
+                return $this->updateRevue($id, $champs);
             default:                    
                 // cas général
                 return $this->updateOneTupleOneTable($table, $id, $champs);
@@ -98,8 +106,12 @@ class MyAccessBDD extends AccessBDD {
      */	
     protected function traitementDelete(string $table, ?array $champs) : ?int{
         switch($table){
-            case "" :
-                // return $this->uneFonction(parametres);
+            case "livre" :
+                return $this->deleteLivre($champs);
+            case "dvd" :
+                return $this->deleteDvd($champs);
+            case "revue" :
+                return $this->deleteRevue($champs);
             default:                    
                 // cas général
                 return $this->deleteTuplesOneTable($table, $champs);	
@@ -155,6 +167,159 @@ class MyAccessBDD extends AccessBDD {
         $requete .= ");";
         return $this->conn->updateBDD($requete, $champs);
     }
+    
+    /**
+     * demande d'ajout (insert) d'un livre dans la base de données
+     * @param array|null $champs
+     * @return 1 si l'insert a fonctionné, null si erreur
+     */	
+    private function insertLivre(?array $champs) : ?int{
+        if(empty($champs)){
+            return null;
+        }
+        // création d'une transaction
+        $this->conn->beginTransaction();
+        try{
+            // ajout de certaines informations du livre dans la table document
+            $champsTableDocument = [
+                "id" => $champs["Id"],
+                "titre" => $champs["Titre"],
+                "image" => $champs["Image"],
+                "idRayon" => $champs["IdRayon"],
+                "idPublic" => $champs["IdPublic"],
+                "idGenre" => $champs["IdGenre"]
+            ];
+            $resultat = $this->insertOneTupleOneTable("document", $champsTableDocument);
+            if($resultat === null){
+                throw new Exception("Erreur lors de l'insertion dans la table document");
+            }
+            // ajout de certaines informations du livre dans la table livres_dvd
+            $champsTableLivres_dvd = [
+                "id" => $champs["Id"]
+            ];
+            $resultat = $this->insertOneTupleOneTable("livres_dvd", $champsTableLivres_dvd);
+            if($resultat === null){
+                throw new Exception("Erreur lors de l'insertion dans la table livres_dvd");
+            }
+            // ajout de certaines informations du livre dans la table livre
+            $champsTableLivre = [
+                "id" => $champs["Id"],
+                "ISBN" => $champs["Isbn"],
+                "auteur" => $champs["Auteur"],
+                "collection" => $champs["Collection"]
+            ];
+            $resultat = $this->insertOneTupleOneTable("livre", $champsTableLivre);
+            if($resultat === null){
+                throw new Exception("Erreur lors de l'insertion dans la table livre");
+            }
+            // Application des actions effectuées dans la transaction s'il n'y a pas d'erreur
+            $this->conn->commit();
+            return 1;
+        }catch (Exception $e){
+            // Annulation des actions effectuées lors de la transaction s'il y a une erreur
+            $this->conn->rollBack();
+            return null;
+        }
+    }
+    
+    /**
+     * demande d'ajout (insert) d'un dvd dans la base de données
+     * @param array|null $champs
+     * @return 1 si l'insert a fonctionné, null si erreur
+     */	
+    private function insertDvd(?array $champs) : ?int{
+        if(empty($champs)){
+            return null;
+        }
+        // création d'une transaction
+        $this->conn->beginTransaction();
+        try{
+            // ajout de certaines informations du dvd dans la table document
+            $champsTableDocument = [
+                "id" => $champs["Id"],
+                "titre" => $champs["Titre"],
+                "image" => $champs["Image"],
+                "idRayon" => $champs["IdRayon"],
+                "idPublic" => $champs["IdPublic"],
+                "idGenre" => $champs["IdGenre"]
+            ];
+            $resultat = $this->insertOneTupleOneTable("document", $champsTableDocument);
+            if($resultat === null){
+                throw new Exception("Erreur lors de l'insertion dans la table document");
+            }
+            // ajout de certaines informations du dvd dans la table livres_dvd
+            $champsTableLivres_dvd = [
+                "id" => $champs["Id"]
+            ];
+            $resultat = $this->insertOneTupleOneTable("livres_dvd", $champsTableLivres_dvd);
+            if($resultat === null){
+                throw new Exception("Erreur lors de l'insertion dans la table livres_dvd");
+            }
+            // ajout de certaines informations du dvd dans la table dvd
+            $champsTableDvd = [
+                "id" => $champs["Id"],
+                "duree" => $champs["Duree"],
+                "realisateur" => $champs["Realisateur"],
+                "synopsis" => $champs["Synopsis"]
+            ];
+            $resultat = $this->insertOneTupleOneTable("dvd", $champsTableDvd);
+            if($resultat === null){
+                throw new Exception("Erreur lors de l'insertion dans la table dvd");
+            }
+            // Application des actions effectuées dans la transaction s'il n'y a pas d'erreur
+            $this->conn->commit();
+            return 1;
+        }catch (Exception $e){
+            // Annulation des actions effectuées lors de la transaction s'il y a une erreur
+            $this->conn->rollBack();
+            return null;
+        }
+    }
+    
+    /**
+     * demande d'ajout (insert) d'une revue dans la base de données
+     * @param array|null $champs
+     * @return 1 si l'insert a fonctionné, null si erreur
+     */	
+    private function insertRevue(?array $champs) : ?int{
+        if(empty($champs)){
+            return null;
+        }
+        // création d'une transaction
+        $this->conn->beginTransaction();
+        try{
+            // ajout de certaines informations de la revue dans la table document
+            $champsTableDocument = [
+                "id" => $champs["Id"],
+                "titre" => $champs["Titre"],
+                "image" => $champs["Image"],
+                "idRayon" => $champs["IdRayon"],
+                "idPublic" => $champs["IdPublic"],
+                "idGenre" => $champs["IdGenre"]
+            ];
+            $resultat = $this->insertOneTupleOneTable("document", $champsTableDocument);
+            if($resultat === null){
+                throw new Exception("Erreur lors de l'insertion dans la table document");
+            }
+            // ajout de certaines informations de la revue dans la table revue
+            $champsTableRevue = [
+                "id" => $champs["Id"],
+                "periodicite" => $champs["Periodicite"],
+                "delaiMiseADispo" => $champs["DelaiMiseADispo"]
+            ];
+            $resultat = $this->insertOneTupleOneTable("revue", $champsTableRevue);
+            if($resultat === null){
+                throw new Exception("Erreur lors de l'insertion dans la table revue");
+            }
+            // Application des actions effectuées dans la transaction s'il n'y a pas d'erreur
+            $this->conn->commit();
+            return 1;
+        }catch (Exception $e){
+            // Annulation des actions effectuées lors de la transaction s'il y a une erreur
+            $this->conn->rollBack();
+            return null;
+        }
+    }
 
     /**
      * demande de modification (update) d'un tuple dans une table
@@ -183,6 +348,152 @@ class MyAccessBDD extends AccessBDD {
     }
     
     /**
+     * demande de modification (update) d'un livre dans la base de données
+     * @param string\null $id
+     * @param array|null $champs 
+     * @return 1 si la modification a fonctionné, null si erreur
+     */	
+    private function updateLivre(?string $id, ?array $champs) : ?int {
+        if(empty($champs)){
+            return null;
+        }
+        if(is_null($id)){
+            return null;
+        }
+        // création d'une transaction
+        $this->conn->beginTransaction();
+        try
+        {
+            // modification de certaines informations du livre dans la table document
+            $champsTableDocument = [
+                "titre" => $champs["Titre"],
+                "image" => $champs["Image"],
+                "idRayon" => $champs["IdRayon"],
+                "idPublic" => $champs["IdPublic"],
+                "idGenre" => $champs["IdGenre"]
+            ];
+            $resultat = $this->updateOneTupleOneTable("document", $id, $champsTableDocument);
+            if($resultat === null){
+                throw new Exception("Erreur lors de la modification dans la table document");
+            }
+            // modification de certaines informations du livre dans la table livre
+            $champsTableLivre = [
+                "ISBN" => $champs["Isbn"],
+                "auteur" => $champs["Auteur"],
+                "collection" => $champs["Collection"]
+            ];
+            $resultat = $this->updateOneTupleOneTable("livre", $id, $champsTableLivre);
+            if($resultat === null){
+                throw new Exception("Erreur lors de la modification dans la table livre");
+            }
+            // Application des actions effectuées dans la transaction s'il n'y a pas d'erreur
+            $this->conn->commit();
+            return 1;
+        }catch (Exception $e){
+            // Annulation des actions effectuées lors de la transaction s'il y a une erreur
+            $this->conn->rollBack();
+            return null;
+        }	        
+    }
+    
+    /**
+     * demande de modification (update) d'un dvd dans la base de données
+     * @param string\null $id
+     * @param array|null $champs 
+     * @return 1 si la modification a fonctionné, null si erreur
+     */	
+    private function updateDvd(?string $id, ?array $champs) : ?int {
+        if(empty($champs)){
+            return null;
+        }
+        if(is_null($id)){
+            return null;
+        }
+        // création d'une transaction
+        $this->conn->beginTransaction();
+        try
+        {
+            // modification de certaines informations du dvd dans la table document
+            $champsTableDocument = [
+                "titre" => $champs["Titre"],
+                "image" => $champs["Image"],
+                "idRayon" => $champs["IdRayon"],
+                "idPublic" => $champs["IdPublic"],
+                "idGenre" => $champs["IdGenre"]
+            ];
+            $resultat = $this->updateOneTupleOneTable("document", $id, $champsTableDocument);
+            if($resultat === null){
+                throw new Exception("Erreur lors de la modification dans la table document");
+            }
+            // modification de certaines informations du dvd dans la table dvd
+            $champsTableDvd = [
+                "duree" => $champs["Duree"],
+                "realisateur" => $champs["Realisateur"],
+                "synopsis" => $champs["Synopsis"]
+            ];
+            $resultat = $this->updateOneTupleOneTable("dvd", $id, $champsTableDvd);
+            if($resultat === null){
+                throw new Exception("Erreur lors de la modification dans la table dvd");
+            }
+            // Application des actions effectuées dans la transaction s'il n'y a pas d'erreur
+            $this->conn->commit();
+            return 1;
+        }catch (Exception $e){
+            // Annulation des actions effectuées lors de la transaction s'il y a une erreur
+            $this->conn->rollBack();
+            return null;
+        }	        
+    }
+    
+    /**
+     * demande de modification (update) d'une revue dans la base de données
+     * @param string\null $id
+     * @param array|null $champs 
+     * @return 1 si la modification a fonctionné, null si erreur
+     */	
+    private function updateRevue(?string $id, ?array $champs) : ?int {
+        if(empty($champs)){
+            return null;
+        }
+        if(is_null($id)){
+            return null;
+        }
+        // création d'une transaction
+        $this->conn->beginTransaction();
+        try
+        {
+            // modification de certaines informations de la revue dans la table document
+            $champsTableDocument = [
+                "titre" => $champs["Titre"],
+                "image" => $champs["Image"],
+                "idRayon" => $champs["IdRayon"],
+                "idPublic" => $champs["IdPublic"],
+                "idGenre" => $champs["IdGenre"]
+            ];
+            $resultat = $this->updateOneTupleOneTable("document", $id, $champsTableDocument);
+            if($resultat === null){
+                throw new Exception("Erreur lors de la modification dans la table document");
+            }
+            // modification de certaines informations de la revue dans la table revue
+            $champsTableRevue = [
+                "periodicite" => $champs["Periodicite"],
+                "delaiMiseADispo" => $champs["DelaiMiseADispo"]
+            ];
+            $resultat = $this->updateOneTupleOneTable("revue", $id, $champsTableRevue);
+            if($resultat === null){
+                throw new Exception("Erreur lors de la modification dans la table revue");
+            }
+            // Application des actions effectuées dans la transaction s'il n'y a pas d'erreur
+            $this->conn->commit();
+            return 1;
+        }catch (Exception $e){
+            // Annulation des actions effectuées lors de la transaction s'il y a une erreur
+            $this->conn->rollBack();
+            return null;
+        }	        
+    }
+    
+    /**
      * demande de suppression (delete) d'un ou plusieurs tuples dans une table
      * @param string $table
      * @param array|null $champs
@@ -200,6 +511,136 @@ class MyAccessBDD extends AccessBDD {
         // (enlève le dernier and)
         $requete = substr($requete, 0, strlen($requete)-5);   
         return $this->conn->updateBDD($requete, $champs);	        
+    }
+    
+    /**
+     * demande de suppression (delete) d'un livre dans la base de données
+     * @param array|null $champs
+     * @return 1 si la suppression a fonctionné, null si erreur
+     */
+    private function deleteLivre(?array $champs) : ?int{
+        if(empty($champs)){
+            return null;
+        }
+        // création d'une transaction
+        $this->conn->beginTransaction();
+        try{
+            // suppression des informations du livre dans la table livre
+            $champsTableLivre = [
+                "id" => $champs["Id"]
+            ];
+            $resultat = $this->deleteTuplesOneTable("livre", $champsTableLivre);
+            if($resultat === null){
+                throw new Exception("Erreur lors de la suppression dans la table livre");
+            }
+            // suppression des informations du livre dans la table livres_dvd
+            $champsTableLivres_dvd = [
+                "id" => $champs["Id"]
+            ];
+            $resultat = $this->deleteTuplesOneTable("livres_dvd", $champsTableLivres_dvd);
+            if($resultat === null){
+                throw new Exception("Erreur lors de la suppression dans la table livres_dvd");
+            }
+            // suppresion des informations du livre dans la table document
+            $champsTableDocument = [
+                "id" => $champs["Id"]
+            ];
+            $resultat = $this->deleteTuplesOneTable("document", $champsTableDocument);
+            if($resultat === null){
+                throw new Exception("Erreur lors de la suppression dans la table document");
+            }
+            // Application des actions effectuées dans la transaction s'il n'y a pas d'erreur
+            $this->conn->commit();
+            return 1;
+        }catch (Exception $e){
+            // Annulation des actions effectuées lors de la transaction s'il y a une erreur
+            $this->conn->rollBack();
+            return null;
+        }	        
+    }
+    
+    /**
+     * demande de suppression (delete) d'un dvd dans la base de données
+     * @param array|null $champs
+     * @return 1 si la suppression a fonctionné, null si erreur
+     */
+    private function deleteDvd(?array $champs) : ?int{
+        if(empty($champs)){
+            return null;
+        }
+        // création d'une transaction
+        $this->conn->beginTransaction();
+        try{
+            // suppression des informations du dvd dans la table dvd
+            $champsTableDvd = [
+                "id" => $champs["Id"]
+            ];
+            $resultat = $this->deleteTuplesOneTable("dvd", $champsTableDvd);
+            if($resultat === null){
+                throw new Exception("Erreur lors de la suppression dans la table dvd");
+            }
+            // suppression des informations du dvd dans la table livres_dvd
+            $champsTableLivres_dvd = [
+                "id" => $champs["Id"]
+            ];
+            $resultat = $this->deleteTuplesOneTable("livres_dvd", $champsTableLivres_dvd);
+            if($resultat === null){
+                throw new Exception("Erreur lors de la suppression dans la table livres_dvd");
+            }
+            // suppresion des informations du dvd dans la table document
+            $champsTableDocument = [
+                "id" => $champs["Id"]
+            ];
+            $resultat = $this->deleteTuplesOneTable("document", $champsTableDocument);
+            if($resultat === null){
+                throw new Exception("Erreur lors de la suppression dans la table document");
+            }
+            // Application des actions effectuées dans la transaction s'il n'y a pas d'erreur
+            $this->conn->commit();
+            return 1;
+        }catch (Exception $e){
+            // Annulation des actions effectuées lors de la transaction s'il y a une erreur
+            $this->conn->rollBack();
+            return null;
+        }	        
+    }
+    
+    /**
+     * demande de suppression (delete) d'une revue dans la base de données
+     * @param array|null $champs
+     * @return 1 si la suppression a fonctionné, null si erreur
+     */
+    private function deleteRevue(?array $champs) : ?int{
+        if(empty($champs)){
+            return null;
+        }
+        // création d'une transaction
+        $this->conn->beginTransaction();
+        try{
+            // suppression des informations de la revue dans la table revue
+            $champsTableRevue = [
+                "id" => $champs["Id"]
+            ];
+            $resultat = $this->deleteTuplesOneTable("revue", $champsTableRevue);
+            if($resultat === null){
+                throw new Exception("Erreur lors de la suppression dans la table revue");
+            }
+            // suppresion des informations de la revue dans la table document
+            $champsTableDocument = [
+                "id" => $champs["Id"]
+            ];
+            $resultat = $this->deleteTuplesOneTable("document", $champsTableDocument);
+            if($resultat === null){
+                throw new Exception("Erreur lors de la suppression dans la table document");
+            }
+            // Application des actions effectuées dans la transaction s'il n'y a pas d'erreur
+            $this->conn->commit();
+            return 1;
+        }catch (Exception $e){
+            // Annulation des actions effectuées lors de la transaction s'il y a une erreur
+            $this->conn->rollBack();
+            return null;
+        }	        
     }
  
     /**
