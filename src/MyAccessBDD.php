@@ -39,7 +39,7 @@ class MyAccessBDD extends AccessBDD {
             case "revue" :
                 return $this->selectAllRevues();
             case "exemplaire" :
-                return $this->selectExemplairesRevue($champs);
+                return $this->selectExemplaires($champs);
             case "commandedocument" :
                 return $this->selectCommandeDocument($champs);
             case "abonnement" :
@@ -104,6 +104,8 @@ class MyAccessBDD extends AccessBDD {
                 return $this->updateRevue($id, $champs);
             case "commandedocument" :
                 return $this->updateCommandeDocument($id, $champs);
+            case "exemplaire" :
+                return $this->updateExemplaire($id, $champs);
             default:                    
                 // cas général
                 return $this->updateOneTupleOneTable($table, $id, $champs);
@@ -446,6 +448,35 @@ class MyAccessBDD extends AccessBDD {
     }
     
     /**
+     * demande de modification (update) d'un tuple dans une table ayant une clé primaire composée
+     * @param string $table
+     * @param string\null $id
+     * @param array|null $champs 
+     * @return int|null nombre de tuples modifiés (0 ou 1) ou null si erreur
+     */	
+    private function updateOneTupleOneTableSeveralKeys(string $table, ?string $id, ?array $champs) : ?int {
+        if(empty($champs)){
+            return null;
+        }
+        if(is_null($id)){
+            return null;
+        }
+        $numero = $champs["numero"];
+        unset($champs["numero"]);
+        // construction de la requête
+        $requete = "update $table set ";
+        foreach ($champs as $key => $value){
+            $requete .= "$key=:$key,";
+        }
+        // (enlève la dernière virgule)
+        $requete = substr($requete, 0, strlen($requete)-1);				
+        $champs["id"] = $id;
+        $champs["numero"] = $numero;
+        $requete .= " where id=:id and numero=:numero;";		
+        return $this->conn->updateBDD($requete, $champs);	        
+    }
+    
+    /**
      * demande de modification (update) d'un livre dans la base de données
      * @param string\null $id
      * @param array|null $champs 
@@ -615,6 +646,42 @@ class MyAccessBDD extends AccessBDD {
             $resultat = $this->updateOneTupleOneTable("commandedocument", $id, $champsTableCommandedocument);
             if($resultat === null){
                 throw new Exception("Erreur lors de la modification dans la table commandedocument");
+            }
+            // Application des actions effectuées dans la transaction s'il n'y a pas d'erreur
+            $this->conn->commit();
+            return 1;
+        }catch (Exception $e){
+            // Annulation des actions effectuées lors de la transaction s'il y a une erreur
+            $this->conn->rollBack();
+            return null;
+        }	        
+    }
+    
+    /**
+     * demande de modification (update) de l'état d'un exemplaire dans la base de données
+     * @param string\null $id
+     * @param array|null $champs 
+     * @return 1 si la modification a fonctionné, null si erreur
+     */	
+    private function updateExemplaire(?string $id, ?array $champs) : ?int {
+        if(empty($champs)){
+            return null;
+        }
+        if(is_null($id)){
+            return null;
+        }
+        // création d'une transaction
+        $this->conn->beginTransaction();
+        try
+        {
+            // modification de l'état de l'exemplaire dans la table exemplaire
+            $champsTableExemplaire = [
+                "numero" => $champs["Numero"],
+                "idEtat" => $champs["IdEtat"]
+            ];
+            $resultat = $this->updateOneTupleOneTableSeveralKeys("exemplaire", $id, $champsTableExemplaire);
+            if($resultat === null){
+                throw new Exception("Erreur lors de la modification dans la table exemplaire");
             }
             // Application des actions effectuées dans la transaction s'il n'y a pas d'erreur
             $this->conn->commit();
@@ -832,11 +899,11 @@ class MyAccessBDD extends AccessBDD {
     }	
 
     /**
-     * récupère tous les exemplaires d'une revue
+     * récupère tous les exemplaires d'un document
      * @param array|null $champs 
      * @return array|null
      */
-    private function selectExemplairesRevue(?array $champs) : ?array{
+    private function selectExemplaires(?array $champs) : ?array{
         if(empty($champs)){
             return null;
         }
@@ -844,8 +911,9 @@ class MyAccessBDD extends AccessBDD {
             return null;
         }
         $champNecessaire['id'] = $champs['id'];
-        $requete = "Select e.id, e.numero, e.dateAchat, e.photo, e.idEtat ";
+        $requete = "Select e.id, e.numero, e.dateAchat, e.photo, e.idEtat, et.libelle ";
         $requete .= "from exemplaire e join document d on e.id=d.id ";
+        $requete .= "join etat et on e.idEtat=et.id ";
         $requete .= "where e.id = :id ";
         $requete .= "order by e.dateAchat DESC";
         return $this->conn->queryBDD($requete, $champNecessaire);
